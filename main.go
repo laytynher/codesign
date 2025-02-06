@@ -9,55 +9,55 @@ import (
 	"time"
 )
 
-type VerificationResult struct {
+type Verificacao struct {
 	Timestamp time.Time `json:"timestamp"`
-	AppPath   string    `json:"app_path"`
-	Verified  bool      `json:"verified"`
-	Output    string    `json:"output"`
-	Error     string    `json:"error,omitempty"`
-	Hostname  string    `json:"hostname"`
+	Caminho   string    `json:"caminho"`
+	Verificado bool     `json:"verificado"`
+	Resposta  string    `json:"resposta"`
+	Erro      string    `json:"erro,omitempty"`
+	Host      string    `json:"host"`
 }
 
-func verifyApp(path string) VerificationResult {
-	cmd := exec.Command("codesign", "--verify", "--deep", "--strict", "--verbose=2", path)
-	output, err := cmd.CombinedOutput()
-	hostname, _ := os.Hostname() // Captura o hostname da workstation
-	result := VerificationResult{
+func verificarApp(caminho string) Verificacao {
+	cmd := exec.Command("codesign", "--verify", "--deep", "--strict", "--verbose=2", caminho)
+	resposta, err := cmd.CombinedOutput()
+	host, _ := os.Hostname() // Obtém o hostname da máquina
+	resultado := Verificacao{
 		Timestamp: time.Now(),
-		AppPath:   path,
-		Verified:  err == nil,
-		Output:    string(output),
-		Hostname:  hostname,
+		Caminho:   caminho,
+		Verificado: err == nil,
+		Resposta:   string(resposta),
+		Host:       host,
 	}
 
 	if err != nil {
-		result.Error = fmt.Sprintf("verification failed: %s", err)
-		log.Printf("Verification failed for %s: %v\nOutput: %s\n", path, err, string(output))
+		resultado.Erro = fmt.Sprintf("verificação falhou: %s", err)
+		log.Printf("Verificação falhou para %s: %v\nResposta: %s\n", caminho, err, string(resposta))
 	} else {
-		log.Printf("Verification successful for %s: %s\n", path, string(output))
+		log.Printf("Verificação bem-sucedida para %s: %s\n", caminho, string(resposta))
 	}
 
-	return result
+	return resultado
 }
 
-func logResultToJSON(result VerificationResult) {
-	logData, err := json.Marshal(result)
+func registrarResultadoComoJSON(resultado Verificacao) {
+	dadosLog, err := json.Marshal(resultado)
 	if err != nil {
-		log.Fatalf("Failed to marshal result: %v", err)
+		log.Fatalf("Falha ao converter resultado: %v", err)
 	}
 
-	// Imprime o log em formato JSON, que será capturado pelo FluentBit
-	fmt.Println(string(logData))
+	// Exibe o log no formato JSON para ser capturado
+	fmt.Println(string(dadosLog))
 }
 
 func main() {
-	appsToVerify := []string{
+	aplicativos := []string{
 		"/Applications/Google Chrome.app",
 		"/Applications/Safari.app",
 	}
 
-	for _, appPath := range appsToVerify {
-		result := verifyApp(appPath)
-		logResultToJSON(result)
+	for _, caminho := range aplicativos {
+		resultado := verificarApp(caminho)
+		registrarResultadoComoJSON(resultado)
 	}
 }
